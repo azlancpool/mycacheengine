@@ -14,7 +14,50 @@ func TestMainSuite(t *testing.T) {
 	RunSpecs(t, "Main Suite")
 }
 
-var _ = Describe("testing hashKeyToInt functionality", hashKeyToIntTest)
+var _ = Describe("testing api functionality", func() {
+	Describe("testing function NewCache", newCacheTest)
+	Describe("testing function hashKeyToInt", hashKeyToIntTest)
+})
+
+func newCacheTest() {
+	Context("Given a valid K data type and a valid setSize", func() {
+		It("should return a not nil instance with not empty fields, setSize = 2 (provided as input) and a nil error", func() {
+			cache, err := NewCache[int, string](2)
+			Expect(err).Error().ShouldNot(HaveOccurred())
+
+			Expect(cache).ShouldNot(BeNil())
+			Expect(cache.sets).ShouldNot(BeNil())
+			Expect(cache.setSize).Should(Equal(2))
+			Expect(cache.setSize).ShouldNot(BeNil())
+		})
+	})
+
+	Context("Given a setSize = 0", func() {
+		It("should return an error cause it can't be used for mod functionality", func() {
+			Expect(NewCache[int, string](0)).Error().Should(HaveOccurred())
+		})
+	})
+
+	Context("Given a setSize < 0", func() {
+		It("should return an error cause it can't be used for mod functionality", func() {
+			Expect(NewCache[int, string](-1)).Error().Should(HaveOccurred())
+		})
+	})
+
+	Context("Busniess rule: Given K data type is not a primitive data type", func() {
+		Context("Given an structure", func() {
+			It("should return an error error", func() {
+				Expect(NewCache[struct{}, string](4)).Error().Should(HaveOccurred())
+			})
+		})
+
+		Context("Given a pointer data type", func() {
+			It("should return an error error", func() {
+				Expect(NewCache[*struct{}, string](4)).Error().Should(HaveOccurred())
+			})
+		})
+	})
+}
 
 func hashKeyToIntTest() {
 	When("Testing int as input values", func() {
