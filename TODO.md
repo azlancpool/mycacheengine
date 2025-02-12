@@ -1,4 +1,6 @@
 # TODO
+- [ ] Define how to build/use the **set index**: It should be based on the set size defined by the user. Examples of set sizes include: 2, 4, 8, 16, etc. To use module strategy based on the key provided for the user could be an option, but it requires that the key would be an int, that is not possible because there is a business restriction _The keys will always be primitives_. It means it could be an int, string, bool, or something else.
+
 - [ ] Implement PUT operation.
 - [ ] Implement GET operation.
 - [ ] Implement DELETE operation.
