@@ -11,6 +11,7 @@ type Cache[K comparable, V any] struct {
 	sets                  map[int]*list.List
 	entries               map[K]*list.Element
 	hashKeyToIntConverter hashKeyToIntConverter[K]
+	getItemToRemove       func(currentSet *list.List) *list.Element
 }
 
 type entry[K comparable, V any] struct {
@@ -18,8 +19,25 @@ type entry[K comparable, V any] struct {
 	value V
 }
 
+type ReplacementAlgo string
+
+const (
+	LRU_ALGO ReplacementAlgo = "LRU"
+	MRU_ALGO ReplacementAlgo = "MRU"
+)
+
+var (
+	LRU_ITEM_TO_REMOVE_GETTER = func(currentSet *list.List) *list.Element {
+		return currentSet.Back()
+	}
+
+	MRU_ITEM_TO_REMOVE_GETTER = func(currentSet *list.List) *list.Element {
+		return currentSet.Front()
+	}
+)
+
 // NewCache returns a new instance of Cache. It saves the provided setSize in the returned instance
-func NewCache[K comparable, V any](setSize int) (*Cache[K, V], error) {
+func NewCache[K comparable, V any](setSize int, replacementAlgorithm ReplacementAlgo) (*Cache[K, V], error) {
 	if setSize <= 0 {
 		return nil, fmt.Errorf("setSize provided '%d', must be a positive value", setSize)
 	}
@@ -29,11 +47,17 @@ func NewCache[K comparable, V any](setSize int) (*Cache[K, V], error) {
 		return nil, fmt.Errorf("provided data type for key is not a supported primitive data type, data type received: %T", zero)
 	}
 
+	getItemToRemove := LRU_ITEM_TO_REMOVE_GETTER
+	if replacementAlgorithm == MRU_ALGO {
+		getItemToRemove = MRU_ITEM_TO_REMOVE_GETTER
+	}
+
 	return &Cache[K, V]{
 		setSize:               setSize,
 		sets:                  make(map[int]*list.List),
 		entries:               make(map[K]*list.Element),
 		hashKeyToIntConverter: new(hashKeyToIntImpl[K]),
+		getItemToRemove:       getItemToRemove,
 	}, nil
 }
 
@@ -51,12 +75,10 @@ func (c *Cache[K, V]) Put(key K, value V) {
 	}
 
 	if c.sets[setIndex].Len() >= c.setSize {
-		// TODO: Implement flexible fuctionality based on selected algorithm LRU or MRU
-		// For now it follows just LRU implementation
-		evict := c.sets[setIndex].Back()
-		if evict != nil {
-			delete(c.entries, evict.Value.(*entry[K, V]).key)
-			c.sets[setIndex].Remove(evict)
+		elementToRemove := c.getItemToRemove(c.sets[setIndex])
+		if elementToRemove != nil {
+			delete(c.entries, elementToRemove.Value.(*entry[K, V]).key)
+			c.sets[setIndex].Remove(elementToRemove)
 		}
 	}
 

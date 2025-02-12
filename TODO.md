@@ -3,7 +3,7 @@
     - [X] Fix the error in the hashKeyToInt function, which returns the same result when inputs of different data types have the same value.
 
 - [X] Implement PUT operation - LRU.
-- [ ] Implement PUT operation (MRU algo pending).
+- [X] Implement PUT operation - MRU.
 - [ ] Implement GET operation.
 - [ ] Implement DELETE operation.
 - [ ] Implement LISTALL operation.
