@@ -1,0 +1,14 @@
+# TODO
+- [ ] Implement PUT operation.
+- [ ] Implement GET operation.
+- [ ] Implement DELETE operation.
+- [ ] Implement LISTALL operation.
+- [ ] Implement LRU algo.
+- [ ] Implement MRU algo.
+- [ ] Create README file.
+
+# To keep in mind
+- The client interface should be type-safe for keys and values and allow for both the keys and value types to be specified at initialisation time. The keys will always be primitives, and the values could be primitives or other custom types.
+- Include some documentation which describes conceptually how your cache works internally and what kinds of use cases it may be suitable for, what it's strengths and weaknesses are, etc.
+Document your design in a markdown or pdf file. **Use diagrams** where appropriate. The maximum length of your submission should be 3 A4 pages.
+
