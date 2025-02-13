@@ -7,6 +7,7 @@ import (
 	"sync"
 )
 
+// Cache structure to be used for handling the cache data
 type Cache[K comparable, V any] struct {
 	setSize               int
 	sets                  map[int]*list.List
