@@ -90,8 +90,8 @@ func (c *Cache[K, V]) Put(key K, value V) {
 // Get returns the item if it's present in cache and a true flag.
 // Otherwise it returns false and an empty value
 func (c *Cache[K, V]) Get(key K) (V, bool) {
-	setIndex := c.hashKeyToIntConverter.hashKeyToInt(key) % c.setSize
 	if elem, found := c.entries[key]; found {
+		setIndex := c.hashKeyToIntConverter.hashKeyToInt(key) % c.setSize
 		c.sets[setIndex].MoveToFront(elem)
 		return elem.Value.(*entry[K, V]).value, true
 	}
