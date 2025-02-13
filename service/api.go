@@ -87,6 +87,18 @@ func (c *Cache[K, V]) Put(key K, value V) {
 	c.entries[key] = elem
 }
 
+// Get returns the item if it's present in cache and a true flag.
+// Otherwise it returns false and an empty value
+func (c *Cache[K, V]) Get(key K) (V, bool) {
+	setIndex := c.hashKeyToIntConverter.hashKeyToInt(key) % c.setSize
+	if elem, found := c.entries[key]; found {
+		c.sets[setIndex].MoveToFront(elem)
+		return elem.Value.(*entry[K, V]).value, true
+	}
+	var zero V
+	return zero, false
+}
+
 // isPrimitiveDataType returns true if the input data type is int, float32, float64, bool or string
 func isPrimitiveDataType[K any](input K) bool {
 	switch any(input).(type) {

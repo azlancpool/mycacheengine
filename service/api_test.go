@@ -18,6 +18,7 @@ func TestMainSuite(t *testing.T) {
 var _ = Describe("testing api functionality", func() {
 	Describe("testing function NewCache", newCacheTest)
 	Describe("testing function Put", putTest)
+	Describe("testing function Get", getTest)
 	Describe("testing function hashKeyToInt", hashKeyToIntTest)
 })
 
@@ -707,6 +708,101 @@ func putTest() {
 						Expect(cachedItem.value).Should(Equal(expectedItem.expectedValue))
 					}
 				})
+			})
+		})
+	})
+}
+
+// getTest tests Get functionality
+func getTest() {
+	When("Testing GET function", func() {
+		var (
+			mockedHashKeyToIntConverter *hashKeyToIntConverterMock[int]
+			preloadedCache              *Cache[int, any]
+		)
+
+		BeforeEach(func() {
+			mockedHashKeyToIntConverter = new(hashKeyToIntConverterMock[int])
+			preloadedCache = &Cache[int, any]{
+				setSize:               4,
+				sets:                  make(map[int]*list.List),
+				entries:               make(map[int]*list.Element),
+				hashKeyToIntConverter: mockedHashKeyToIntConverter,
+				getItemToRemove:       LRU_ITEM_TO_REMOVE_GETTER,
+			}
+
+			preloadedItems := []struct {
+				key              int
+				value            any
+				mockedHashResult int
+			}{
+				{
+					key:              123,
+					value:            "foo",
+					mockedHashResult: 0,
+				},
+				{
+					key:              456,
+					value:            "bar",
+					mockedHashResult: 1,
+				},
+				{
+					key:              789,
+					value:            struct{}{},
+					mockedHashResult: 0,
+				},
+				{
+					key:              100,
+					value:            true,
+					mockedHashResult: 0,
+				},
+			}
+
+			for _, item := range preloadedItems {
+				mockedHashKeyToIntConverter.On("hashKeyToInt", item.key).Return(item.mockedHashResult)
+				preloadedCache.Put(item.key, item.value)
+			}
+		})
+
+		Context("Looking for a key that exists: key=123", func() {
+			It("should return true and value='foo'", func() {
+				value, exist := preloadedCache.Get(123)
+				Expect(exist).Should(BeTrue())
+				Expect(value).Should(Equal("foo"))
+			})
+		})
+
+		Context("Looking for a key that exists: key=100", func() {
+			It("should return true and value=true", func() {
+				value, exist := preloadedCache.Get(100)
+				Expect(exist).Should(BeTrue())
+				Expect(value).Should(Equal(true))
+			})
+		})
+
+		Context("Looking for a key that exists: key=789", func() {
+			It("should return true and an empty struct as result", func() {
+				value, exist := preloadedCache.Get(789)
+				Expect(exist).Should(BeTrue())
+				Expect(value).Should(BeEquivalentTo(struct{}{}))
+			})
+		})
+
+		Context("Looking for a key that exists: key=456", func() {
+			It("should return true and value='bar'", func() {
+				value, exist := preloadedCache.Get(456)
+				Expect(exist).Should(BeTrue())
+				Expect(value).Should(Equal("bar"))
+			})
+		})
+
+		Context("Looking for a key that doesn't exist: key=999", func() {
+			It("should return false and a nil value", func() {
+				mockedHashKeyToIntConverter.On("hashKeyToInt", 999).Return(789)
+
+				value, exist := preloadedCache.Get(999)
+				Expect(exist).Should(BeFalse())
+				Expect(value).Should(BeNil())
 			})
 		})
 	})
