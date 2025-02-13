@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this section.
 
+### [v1.4.1] - 2025-01-13
+#### Fixed
+- project module definition
+
 ### [v1.4.0] - 2025-01-13
 #### Added
 - Implemented support for multi-threaded cache access. Now it's thread safe!
