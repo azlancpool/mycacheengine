@@ -1,6 +1,6 @@
 
-# myCacheEngine
-`myCacheEngine` is a custom caching library implemented in Go, designed to optimize data retrieval and improve application performance by temporarily storing frequently accessed data in memory. It features thread-safe operations and employs an N-way set associative caching mechanism.
+# mycacheengine
+`mycacheengine` is a custom caching library implemented in Go, designed to optimize data retrieval and improve application performance by temporarily storing frequently accessed data in memory. It features thread-safe operations and employs an N-way set associative caching mechanism.
 
 ## Features
 -  **In-Memory Storage**: Utilizes Go's `container/list` for efficient data storage and retrieval.
@@ -11,25 +11,25 @@
 
 
 ## Installation
-To integrate `myCacheEngine` into your Go project, ensure you have Go installed and set up. Then, run:
+To integrate `mycacheengine` into your Go project, ensure you have Go installed and set up. Then, run:
 ```bash
-go  get  github.com/azlancpool/myCacheEngine
+go  get  github.com/azlancpool/mycacheengine
 ```
 ## Usage
 
-Here's a basic example of how to use `myCacheEngine`:
+Here's a basic example of how to use `mycacheengine`:
 ```go
 package main
 
 import (
 	"fmt"
 
-	"github.com/azlancpool/myCacheEngine/service"
+	"github.com/azlancpool/mycacheengine/cache"
 )
 
 func main() {
 	// Initialize cache with a capacity of 5
-	cache := service.NewCache(5)
+	cache := cache.NewCache(5)
 	
     // Add items to the cache
 	cache.Set("key1", "value1")
@@ -44,11 +44,11 @@ func main() {
 }
 ```
 ## Thread-Safe Functionality
-`myCacheEngine` ensures thread safety by utilizing mutex locks (`sync.Mutex`) to manage concurrent access to the cache. This design prevents race conditions and ensures data integrity when multiple goroutines interact with the cache simultaneously. The mutex is locked during write operations and unlocked upon completion, allowing safe concurrent reads and writes.
+`mycacheengine` ensures thread safety by utilizing mutex locks (`sync.Mutex`) to manage concurrent access to the cache. This design prevents race conditions and ensures data integrity when multiple goroutines interact with the cache simultaneously. The mutex is locked during write operations and unlocked upon completion, allowing safe concurrent reads and writes.
   
 
 ## Internal Mechanics: N-Way Set Associative Cache
-`myCacheEngine` employs an N-way set associative caching mechanism, which balances the simplicity of direct-mapped caches with the flexibility of fully associative caches. In this design, the cache is divided into multiple sets, each containing a fixed number of ways (slots). Once the set is determined, the data is aggregated in the next available slot. If no more spaces are available, one of the previously defined algorithms (LRU or MRU) is implemented to remove the corresponding information.
+`mycacheengine` employs an N-way set associative caching mechanism, which balances the simplicity of direct-mapped caches with the flexibility of fully associative caches. In this design, the cache is divided into multiple sets, each containing a fixed number of ways (slots). Once the set is determined, the data is aggregated in the next available slot. If no more spaces are available, one of the previously defined algorithms (LRU or MRU) is implemented to remove the corresponding information.
 
 **Difference between LRU and MRU**
 
