@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this section.
 
+### [v1.4.2] - 2025-01-13
+#### Changed
+- Small change in README file, "Usage" section
+
 ### [v1.4.1] - 2025-01-13
 #### Fixed
 - project module definition
