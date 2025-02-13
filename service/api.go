@@ -4,7 +4,61 @@ import (
 	"container/list"
 	"fmt"
 	"hash/fnv"
+	"sync"
 )
+
+// strengths:
+// - Key data types are allowed to extension always it would be defined and would be comparable
+// Much more flexible than required. This approach allows to save any data type for item value
+
+// weaknesses:
+// - Key data tyes are fixed.
+// - Improve unit tests adding more edge cases.
+
+/// LinkedList > queue / stack
+// ITERATION INPUTS: [0, 1, 2, 3, 4, 2, 3, 1, 5, 6]
+// set = 4
+
+// FIRST ITERATION
+//   LRU
+// |[0,0]|
+//   MRU
+
+// SECOND ITERATION
+//   LRU
+// |[0,0]|
+// |[1,1]|
+//   MRU
+
+// THIRD ITERATION
+//   LRU
+// |[0,0]|
+// |[1,1]|
+// |[2,2]|
+//   MRU
+
+// FOURTH ITERATION
+//   LRU
+// |[0,0]|
+// |[1,1]|
+// |[2,2]|
+// |[3,3]|
+//   MRU
+
+// ITERATION INPUTS: [0, 1, 2, 3, 4, 2, 3, 1, 5, 6]
+// FIFTH ITERATION (FULL SET) - INPUT: 4
+//      			  	  LRU				  MRU
+// |[0,0]|		=>	   -|[0,1]|				|[0,0]|
+// |[1,1]|		=>		|[1,2]|				|[1,1]|
+// |[2,2]|		=>		|[2,3]|				|[2,2]|
+// |[3,3]|		=>	   +|[3,4]|			  -+|[3,4]|
+
+// SIXTH ITERATION (FULL SET) - INPUT: 2
+//   LRU			      LRU		||		  MRU			      MRU
+// |[0,1]|		=>		|[0,1]|		||		|[0,0]|		=>		|[0,0]|
+//-|[1,2]|		=>		|[1,3]|		||		|[1,1]|		=>		|[1,1]|
+// |[2,3]|		=>		|[2,4]|		||	   -|[2,2]|		=>	   *|[2,4]|
+// |[3,4]|		=>	   +|[3,2]|		||	    |[3,4]|		=>	   +|[3,2]|
 
 type Cache[K comparable, V any] struct {
 	setSize               int
@@ -12,6 +66,7 @@ type Cache[K comparable, V any] struct {
 	entries               map[K]*list.Element
 	hashKeyToIntConverter hashKeyToIntConverter[K]
 	getItemToRemove       func(currentSet *list.List) *list.Element
+	mutex                 sync.Mutex
 }
 
 type entry[K comparable, V any] struct {
@@ -37,7 +92,7 @@ var (
 )
 
 // NewCache returns a new instance of Cache. It saves the provided setSize in the returned instance
-func NewCache[K comparable, V any](setSize int, replacementAlgorithm ReplacementAlgo) (*Cache[K, V], error) {
+func NewCache[K comparable, V any](setSize int, replacementAlgorithm ...ReplacementAlgo) (*Cache[K, V], error) {
 	if setSize <= 0 {
 		return nil, fmt.Errorf("setSize provided '%d', must be a positive value", setSize)
 	}
@@ -48,7 +103,7 @@ func NewCache[K comparable, V any](setSize int, replacementAlgorithm Replacement
 	}
 
 	getItemToRemove := LRU_ITEM_TO_REMOVE_GETTER
-	if replacementAlgorithm == MRU_ALGO {
+	if replacementAlgorithm != nil && replacementAlgorithm[0] == MRU_ALGO {
 		getItemToRemove = MRU_ITEM_TO_REMOVE_GETTER
 	}
 
@@ -63,6 +118,9 @@ func NewCache[K comparable, V any](setSize int, replacementAlgorithm Replacement
 
 // Put implements functionality that seet a new value in the cache, following n-way-set-associative-cache
 func (c *Cache[K, V]) Put(key K, value V) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
 	setIndex := c.hashKeyToIntConverter.hashKeyToInt(key) % c.setSize
 	if elem, found := c.entries[key]; found {
 		c.sets[setIndex].MoveToFront(elem)
@@ -90,6 +148,9 @@ func (c *Cache[K, V]) Put(key K, value V) {
 // Get returns the item if it's present in cache and a true flag.
 // Otherwise it returns false and an empty value
 func (c *Cache[K, V]) Get(key K) (V, bool) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
 	if elem, found := c.entries[key]; found {
 		setIndex := c.hashKeyToIntConverter.hashKeyToInt(key) % c.setSize
 		c.sets[setIndex].MoveToFront(elem)
@@ -101,6 +162,9 @@ func (c *Cache[K, V]) Get(key K) (V, bool) {
 
 // ListAll returns all element saved in cache
 func (c *Cache[K, V]) ListAll() map[K]V {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
 	result := make(map[K]V)
 	for k, elem := range c.entries {
 		result[k] = elem.Value.(*entry[K, V]).value
@@ -110,6 +174,9 @@ func (c *Cache[K, V]) ListAll() map[K]V {
 
 // Delete removes the item associated to the provided key if it's found.
 func (c *Cache[K, V]) Delete(key K) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
 	if elem, found := c.entries[key]; found {
 		setIndex := c.hashKeyToIntConverter.hashKeyToInt(key) % c.setSize
 		c.sets[setIndex].Remove(elem)

@@ -3,6 +3,7 @@ package cache
 import (
 	"container/list"
 	"math"
+	"sync"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -22,6 +23,7 @@ var _ = Describe("testing api functionality", func() {
 	Describe("testing function ListAll", listAllTest)
 	Describe("testing function Delete", deleteTest)
 	Describe("testing function hashKeyToInt", hashKeyToIntTest)
+	Describe("testing concurrency", concurrencyTest)
 })
 
 type itemsToLoad struct {
@@ -65,6 +67,24 @@ func newCacheTest() {
 			Expect(cache).ShouldNot(BeNil())
 			Expect(cache.sets).ShouldNot(BeNil())
 			Expect(cache.setSize).Should(Equal(4))
+			Expect(cache.setSize).ShouldNot(BeNil())
+			Expect(cache.getItemToRemove).ShouldNot(BeNil())
+		})
+	})
+
+	Context("Given a nil replacement algorithm", func() {
+		It(`should return:
+			- A not nil instance
+			- Instance fields must not be empty
+			- setSize = 2 (provided as input)
+			- Not nil function getItemToRemove (LRU scenario)
+			- Nil error`, func() {
+			cache, err := NewCache[int, string](2)
+			Expect(err).Error().ShouldNot(HaveOccurred())
+
+			Expect(cache).ShouldNot(BeNil())
+			Expect(cache.sets).ShouldNot(BeNil())
+			Expect(cache.setSize).Should(Equal(2))
 			Expect(cache.setSize).ShouldNot(BeNil())
 			Expect(cache.getItemToRemove).ShouldNot(BeNil())
 		})
@@ -1060,6 +1080,73 @@ func hashKeyToIntTest() {
 				comparissionResult := functionInvoker.hashKeyToInt(123) == functionInvoker.hashKeyToInt(123)
 				Expect(comparissionResult).Should(BeTrue())
 			})
+		})
+	})
+}
+
+// concurrencyTest tests thread safe
+func concurrencyTest() {
+	When("Creating goroutines manually", func() {
+		It("Should not return race condition errors if run test with -race flag", func() {
+			cache, err := NewCache[string, any](8)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			var wg sync.WaitGroup
+			wg.Add(6)
+
+			go func() {
+				defer wg.Done()
+				cache.Put("key1", 100)
+			}()
+
+			go func() {
+				defer wg.Done()
+				cache.Put("key2", true)
+			}()
+
+			go func() {
+				defer wg.Done()
+				cache.ListAll()
+			}()
+
+			go func() {
+				defer wg.Done()
+				cache.ListAll()
+			}()
+
+			go func() {
+				defer wg.Done()
+				cache.Delete("foo")
+			}()
+
+			go func() {
+				defer wg.Done()
+				cache.Get("foo")
+			}()
+
+			wg.Wait()
+		})
+	})
+
+	When("Creating goroutines in a iterative way", func() {
+		It("Should not return race condition errors if run test with -race flag", func() {
+			cache, err := NewCache[string, any](5)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			var wg sync.WaitGroup
+			numGoroutines := 100
+
+			wg.Add(numGoroutines)
+
+			for i := 0; i < numGoroutines; i++ {
+				go func(i int) {
+					defer wg.Done()
+					cache.Put("key", i)     // Concurrently writing
+					_, _ = cache.Get("key") // Concurrently reading
+				}(i)
+			}
+
+			wg.Wait() // Wait for all goroutines to finish
 		})
 	})
 }
