@@ -85,6 +85,16 @@ func newCacheTest() {
 }
 
 func putTest() {
+	type itemsToLoad struct {
+		key   int
+		value any
+	}
+
+	type itemsToLoadWithMockedKeyHashed struct {
+		key             int
+		value           any
+		mockedHashedKey int
+	}
 	When("LRU - Testing 4-way-set-associative-cache", func() {
 		var (
 			mockedHashKeyToIntConverter *hashKeyToIntConverterMock[int]
@@ -141,19 +151,18 @@ func putTest() {
 		Context("Given 6 invocations with different key-value pairs", func() {
 			Context("Given the same setIndex for all invocations", func() {
 				It("should return have a single defined set,the last stored items", func() {
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 123).Return(0)
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 456).Return(0)
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 789).Return(0)
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 100).Return(0)
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 101).Return(0)
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 102).Return(0)
-
-					cacheTester.Put(123, "firstValue")
-					cacheTester.Put(456, "secondValue")
-					cacheTester.Put(789, "thirdValue")
-					cacheTester.Put(100, "fourthValue")
-					cacheTester.Put(101, "fifthValue")
-					cacheTester.Put(102, "sixthValue")
+					itemsToLoad := []itemsToLoad{
+						{123, "firstValue"},
+						{456, "secondValue"},
+						{789, "thirdValue"},
+						{100, "fourthValue"},
+						{101, "fifthValue"},
+						{102, "sixthValue"},
+					}
+					for _, item := range itemsToLoad {
+						mockedHashKeyToIntConverter.On("hashKeyToInt", item.key).Return(0)
+						cacheTester.Put(item.key, item.value)
+					}
 
 					Expect(cacheTester.sets[0].Len()).Should(Equal(4))
 
@@ -206,21 +215,20 @@ func putTest() {
 		Context("Given 8 invocations with different key-value pairs", func() {
 			Context("Given the same setIndex for all invocations", func() {
 				It("should return have a single defined set,the last stored items", func() {
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 123).Return(0)
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 456).Return(0)
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 789).Return(0)
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 100).Return(0)
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 101).Return(0)
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 102).Return(0)
-
-					cacheTester.Put(123, "firstValue")
-					cacheTester.Put(456, "secondValue")
-					cacheTester.Put(789, "thirdValue")
-					cacheTester.Put(100, "fourthValue")
-					cacheTester.Put(101, "fifthValue")
-					cacheTester.Put(102, "sixthValue")
-					cacheTester.Put(456, "anotherSecondValue")
-					cacheTester.Put(100, "anotherFourthValue")
+					itemsToLoad := []itemsToLoad{
+						{123, "firstValue"},
+						{456, "secondValue"},
+						{789, "thirdValue"},
+						{100, "fourthValue"},
+						{101, "fifthValue"},
+						{102, "sixthValue"},
+						{456, "anotherSecondValue"},
+						{100, "anotherFourthValue"},
+					}
+					for _, item := range itemsToLoad {
+						mockedHashKeyToIntConverter.On("hashKeyToInt", item.key).Return(0)
+						cacheTester.Put(item.key, item.value)
+					}
 
 					// Test scenario explanation
 					// For the keys: [123, 456, 789, 100, 101, 102, 456, 100]
@@ -282,15 +290,16 @@ func putTest() {
 		Context("Given 4 invocations with different key-value pairs", func() {
 			Context("Given a different set per invocation", func() {
 				It("should have a 4 defined sets, with a single value per set", func() {
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 1).Return(0)
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 2).Return(1)
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 3).Return(2)
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 4).Return(3)
-
-					cacheTester.Put(1, true)
-					cacheTester.Put(2, "hello")
-					cacheTester.Put(3, 123)
-					cacheTester.Put(4, false)
+					itemsToLoad := []itemsToLoadWithMockedKeyHashed{
+						{1, true, 0},
+						{2, "hello", 1},
+						{3, 123, 2},
+						{4, false, 3},
+					}
+					for _, item := range itemsToLoad {
+						mockedHashKeyToIntConverter.On("hashKeyToInt", item.key).Return(item.mockedHashedKey)
+						cacheTester.Put(item.key, item.value)
+					}
 
 					// creates a list of validations
 					expectedTestValues := []struct {
@@ -338,15 +347,16 @@ func putTest() {
 
 			Context("Given the same set twice", func() {
 				It("should have 2 defined sets, with a two values per set", func() {
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 1).Return(0)
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 2).Return(1)
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 3).Return(0)
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 4).Return(1)
-
-					cacheTester.Put(1, true)
-					cacheTester.Put(2, "hello")
-					cacheTester.Put(3, 123)
-					cacheTester.Put(4, false)
+					itemsToLoad := []itemsToLoadWithMockedKeyHashed{
+						{1, true, 0},
+						{2, "hello", 1},
+						{3, 123, 0},
+						{4, false, 1},
+					}
+					for _, item := range itemsToLoad {
+						mockedHashKeyToIntConverter.On("hashKeyToInt", item.key).Return(item.mockedHashedKey)
+						cacheTester.Put(item.key, item.value)
+					}
 
 					// creates a list of validations
 					expectedTestValues := []struct {
@@ -451,19 +461,18 @@ func putTest() {
 		Context("Given 6 invocations with different key-value pairs", func() {
 			Context("Given the same setIndex for all invocations", func() {
 				It("should return have a single defined set,the last stored items", func() {
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 123).Return(0)
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 456).Return(0)
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 789).Return(0)
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 100).Return(0)
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 101).Return(0)
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 102).Return(0)
-
-					cacheTester.Put(123, "firstValue")
-					cacheTester.Put(456, "secondValue")
-					cacheTester.Put(789, "thirdValue")
-					cacheTester.Put(100, "fourthValue")
-					cacheTester.Put(101, "fifthValue")
-					cacheTester.Put(102, "sixthValue")
+					itemsToLoad := []itemsToLoad{
+						{123, "firstValue"},
+						{456, "secondValue"},
+						{789, "thirdValue"},
+						{100, "fourthValue"},
+						{101, "fifthValue"},
+						{102, "sixthValue"},
+					}
+					for _, item := range itemsToLoad {
+						mockedHashKeyToIntConverter.On("hashKeyToInt", item.key).Return(0)
+						cacheTester.Put(item.key, item.value)
+					}
 
 					// Test scenario explanation
 					// For the keys: [123, 456, 789, 100, 101, 102, 456, 100]
@@ -523,21 +532,20 @@ func putTest() {
 		Context("Given 8 invocations with different key-value pairs", func() {
 			Context("Given the same setIndex for all invocations", func() {
 				It("should return have a single defined set,the last stored items", func() {
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 123).Return(0)
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 456).Return(0)
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 789).Return(0)
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 100).Return(0)
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 101).Return(0)
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 102).Return(0)
-
-					cacheTester.Put(123, "firstValue")
-					cacheTester.Put(456, "secondValue")
-					cacheTester.Put(789, "thirdValue")
-					cacheTester.Put(100, "fourthValue")
-					cacheTester.Put(101, "fifthValue")
-					cacheTester.Put(102, "sixthValue")
-					cacheTester.Put(456, "anotherSecondValue")
-					cacheTester.Put(100, "anotherFourthValue")
+					itemsToLoad := []itemsToLoad{
+						{123, "firstValue"},
+						{456, "secondValue"},
+						{789, "thirdValue"},
+						{100, "fourthValue"},
+						{101, "fifthValue"},
+						{102, "sixthValue"},
+						{456, "anotherSecondValue"},
+						{100, "anotherFourthValue"},
+					}
+					for _, item := range itemsToLoad {
+						mockedHashKeyToIntConverter.On("hashKeyToInt", item.key).Return(0)
+						cacheTester.Put(item.key, item.value)
+					}
 
 					// Test scenario explanation
 					// For the keys: [123, 456, 789, 100, 101, 102, 456, 100]
@@ -599,15 +607,16 @@ func putTest() {
 		Context("Given 4 invocations with different key-value pairs", func() {
 			Context("Given a different set per invocation", func() {
 				It("should have a 4 defined sets, with a single value per set", func() {
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 1).Return(0)
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 2).Return(1)
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 3).Return(2)
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 4).Return(3)
-
-					cacheTester.Put(1, true)
-					cacheTester.Put(2, "hello")
-					cacheTester.Put(3, 123)
-					cacheTester.Put(4, false)
+					itemsToLoad := []itemsToLoadWithMockedKeyHashed{
+						{1, true, 0},
+						{2, "hello", 1},
+						{3, 123, 2},
+						{4, false, 3},
+					}
+					for _, item := range itemsToLoad {
+						mockedHashKeyToIntConverter.On("hashKeyToInt", item.key).Return(item.mockedHashedKey)
+						cacheTester.Put(item.key, item.value)
+					}
 
 					// creates a list of validations
 					expectedTestValues := []struct {
@@ -655,15 +664,16 @@ func putTest() {
 
 			Context("Given the same set twice", func() {
 				It("should have 2 defined sets, with a two values per set", func() {
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 1).Return(0)
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 2).Return(1)
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 3).Return(0)
-					mockedHashKeyToIntConverter.On("hashKeyToInt", 4).Return(1)
-
-					cacheTester.Put(1, true)
-					cacheTester.Put(2, "hello")
-					cacheTester.Put(3, 123)
-					cacheTester.Put(4, false)
+					itemsToLoad := []itemsToLoadWithMockedKeyHashed{
+						{1, true, 0},
+						{2, "hello", 1},
+						{3, 123, 0},
+						{4, false, 1},
+					}
+					for _, item := range itemsToLoad {
+						mockedHashKeyToIntConverter.On("hashKeyToInt", item.key).Return(item.mockedHashedKey)
+						cacheTester.Put(item.key, item.value)
+					}
 
 					// creates a list of validations
 					expectedTestValues := []struct {
