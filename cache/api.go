@@ -7,59 +7,6 @@ import (
 	"sync"
 )
 
-// strengths:
-// - Key data types are allowed to extension always it would be defined and would be comparable
-// Much more flexible than required. This approach allows to save any data type for item value
-
-// weaknesses:
-// - Key data tyes are fixed.
-// - Improve unit tests adding more edge cases.
-
-/// LinkedList > queue / stack
-// ITERATION INPUTS: [0, 1, 2, 3, 4, 2, 3, 1, 5, 6]
-// set = 4
-
-// FIRST ITERATION
-//   LRU
-// |[0,0]|
-//   MRU
-
-// SECOND ITERATION
-//   LRU
-// |[0,0]|
-// |[1,1]|
-//   MRU
-
-// THIRD ITERATION
-//   LRU
-// |[0,0]|
-// |[1,1]|
-// |[2,2]|
-//   MRU
-
-// FOURTH ITERATION
-//   LRU
-// |[0,0]|
-// |[1,1]|
-// |[2,2]|
-// |[3,3]|
-//   MRU
-
-// ITERATION INPUTS: [0, 1, 2, 3, 4, 2, 3, 1, 5, 6]
-// FIFTH ITERATION (FULL SET) - INPUT: 4
-//      			  	  LRU				  MRU
-// |[0,0]|		=>	   -|[0,1]|				|[0,0]|
-// |[1,1]|		=>		|[1,2]|				|[1,1]|
-// |[2,2]|		=>		|[2,3]|				|[2,2]|
-// |[3,3]|		=>	   +|[3,4]|			  -+|[3,4]|
-
-// SIXTH ITERATION (FULL SET) - INPUT: 2
-//   LRU			      LRU		||		  MRU			      MRU
-// |[0,1]|		=>		|[0,1]|		||		|[0,0]|		=>		|[0,0]|
-//-|[1,2]|		=>		|[1,3]|		||		|[1,1]|		=>		|[1,1]|
-// |[2,3]|		=>		|[2,4]|		||	   -|[2,2]|		=>	   *|[2,4]|
-// |[3,4]|		=>	   +|[3,2]|		||	    |[3,4]|		=>	   +|[3,2]|
-
 type Cache[K comparable, V any] struct {
 	setSize               int
 	sets                  map[int]*list.List
