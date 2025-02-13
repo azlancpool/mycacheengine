@@ -99,6 +99,24 @@ func (c *Cache[K, V]) Get(key K) (V, bool) {
 	return zero, false
 }
 
+// ListAll returns all element saved in cache
+func (c *Cache[K, V]) ListAll() map[K]V {
+	result := make(map[K]V)
+	for k, elem := range c.entries {
+		result[k] = elem.Value.(*entry[K, V]).value
+	}
+	return result
+}
+
+// Delete removes the item associated to the provided key if it's found.
+func (c *Cache[K, V]) Delete(key K) {
+	if elem, found := c.entries[key]; found {
+		setIndex := c.hashKeyToIntConverter.hashKeyToInt(key) % c.setSize
+		c.sets[setIndex].Remove(elem)
+		delete(c.entries, key)
+	}
+}
+
 // isPrimitiveDataType returns true if the input data type is int, float32, float64, bool or string
 func isPrimitiveDataType[K any](input K) bool {
 	switch any(input).(type) {

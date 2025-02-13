@@ -19,8 +19,21 @@ var _ = Describe("testing api functionality", func() {
 	Describe("testing function NewCache", newCacheTest)
 	Describe("testing function Put", putTest)
 	Describe("testing function Get", getTest)
+	Describe("testing function ListAll", listAllTest)
+	Describe("testing function Delete", deleteTest)
 	Describe("testing function hashKeyToInt", hashKeyToIntTest)
 })
+
+type itemsToLoad struct {
+	key   int
+	value any
+}
+
+type itemsToLoadWithMockedKeyHashed struct {
+	key             int
+	value           any
+	mockedHashedKey int
+}
 
 func newCacheTest() {
 	Context("Given a valid K data type and a valid setSize", func() {
@@ -85,16 +98,6 @@ func newCacheTest() {
 }
 
 func putTest() {
-	type itemsToLoad struct {
-		key   int
-		value any
-	}
-
-	type itemsToLoadWithMockedKeyHashed struct {
-		key             int
-		value           any
-		mockedHashedKey int
-	}
 	When("LRU - Testing 4-way-set-associative-cache", func() {
 		var (
 			mockedHashKeyToIntConverter *hashKeyToIntConverterMock[int]
@@ -813,6 +816,167 @@ func getTest() {
 				value, exist := preloadedCache.Get(999)
 				Expect(exist).Should(BeFalse())
 				Expect(value).Should(BeNil())
+			})
+		})
+	})
+}
+
+// listAllTest tests ListAll functionality
+func listAllTest() {
+	When("Testing GET function", func() {
+		var (
+			mockedHashKeyToIntConverter *hashKeyToIntConverterMock[int]
+			preloadedCache              *Cache[int, any]
+			preloadedItems              = []struct {
+				key              int
+				value            any
+				mockedHashResult int
+			}{
+				{
+					key:              123,
+					value:            "foo",
+					mockedHashResult: 0,
+				},
+				{
+					key:              456,
+					value:            "bar",
+					mockedHashResult: 1,
+				},
+				{
+					key:              789,
+					value:            struct{}{},
+					mockedHashResult: 0,
+				},
+				{
+					key:              100,
+					value:            true,
+					mockedHashResult: 0,
+				},
+			}
+		)
+
+		BeforeEach(func() {
+			mockedHashKeyToIntConverter = new(hashKeyToIntConverterMock[int])
+			preloadedCache = &Cache[int, any]{
+				setSize:               4,
+				sets:                  make(map[int]*list.List),
+				entries:               make(map[int]*list.Element),
+				hashKeyToIntConverter: mockedHashKeyToIntConverter,
+				getItemToRemove:       LRU_ITEM_TO_REMOVE_GETTER,
+			}
+
+			for _, item := range preloadedItems {
+				mockedHashKeyToIntConverter.On("hashKeyToInt", item.key).Return(item.mockedHashResult)
+				preloadedCache.Put(item.key, item.value)
+			}
+		})
+
+		Context("Given an empty cache", func() {
+			It("should return an empty map", func() {
+				emptyCache, err := NewCache[int, any](5, LRU_ALGO)
+
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(len(emptyCache.ListAll())).Should(BeZero())
+			})
+		})
+
+		Context("Given a preloaded cache with 4 elements", func() {
+			It("should return a map with preloaded elements", func() {
+				allItems := preloadedCache.ListAll()
+
+				Expect(len(allItems)).Should(Equal(4))
+				// checking all preloaded items
+				for _, item := range preloadedItems {
+					v, ok := allItems[item.key]
+					Expect(ok).Should(BeTrue())
+					Expect(v).Should(BeEquivalentTo(item.value))
+				}
+			})
+		})
+	})
+}
+
+// deleteTest tests Delete functionality
+func deleteTest() {
+	When("Testing DELETE function", func() {
+		var (
+			mockedHashKeyToIntConverter *hashKeyToIntConverterMock[int]
+			preloadedCache              *Cache[int, any]
+			preloadedItems              = []itemsToLoadWithMockedKeyHashed{
+				{
+					key:             123,
+					value:           "foo",
+					mockedHashedKey: 0,
+				},
+				{
+					key:             456,
+					value:           "bar",
+					mockedHashedKey: 1,
+				},
+				{
+					key:             789,
+					value:           struct{}{},
+					mockedHashedKey: 0,
+				},
+				{
+					key:             100,
+					value:           true,
+					mockedHashedKey: 0,
+				},
+			}
+		)
+
+		BeforeEach(func() {
+			mockedHashKeyToIntConverter = new(hashKeyToIntConverterMock[int])
+			preloadedCache = &Cache[int, any]{
+				setSize:               4,
+				sets:                  make(map[int]*list.List),
+				entries:               make(map[int]*list.Element),
+				hashKeyToIntConverter: mockedHashKeyToIntConverter,
+				getItemToRemove:       LRU_ITEM_TO_REMOVE_GETTER,
+			}
+
+			for _, item := range preloadedItems {
+				mockedHashKeyToIntConverter.On("hashKeyToInt", item.key).Return(item.mockedHashedKey)
+				preloadedCache.Put(item.key, item.value)
+			}
+		})
+
+		Context("Trying to delete an item that doesn't exist", func() {
+			It("should keep the elements size per key", func() {
+				preloadedCache.Delete(999)
+
+				allItems := preloadedCache.ListAll()
+				Expect(len(allItems)).Should(Equal(4))
+				// checking all preloaded items
+				for _, item := range preloadedItems {
+					v, ok := allItems[item.key]
+					Expect(ok).Should(BeTrue())
+					Expect(v).Should(BeEquivalentTo(item.value))
+				}
+			})
+		})
+
+		Context("Trying to delete two items the first one exists and the another one no", func() {
+			It("should reduce all times size in 1", func() {
+				preloadedCache.Delete(999)
+				preloadedCache.Delete(123)
+
+				allItems := preloadedCache.ListAll()
+				Expect(len(allItems)).Should(Equal(3))
+				// checking all preloaded items
+				for k, v := range allItems {
+					found := false
+					for _, currentItem := range preloadedItems {
+						if k == currentItem.key {
+							found = true
+							Expect(k).Should(BeEquivalentTo(currentItem.key))
+							Expect(v).Should(BeEquivalentTo(currentItem.value))
+							break
+						}
+					}
+					Expect(found).Should(BeTrue())
+				}
 			})
 		})
 	})
