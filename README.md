@@ -23,25 +23,30 @@ package main
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/azlancpool/mycacheengine/cache"
 )
 
 func main() {
 	// Initialize cache with a capacity of 5
-	cache := cache.NewCache(5)
-	
-    // Add items to the cache
-	cache.Set("key1", "value1")
-	cache.Set("key2", true)
-	
-    // Retrieve items from the cache
-	if value, found := cache.Get("key1"); found {
+	cache, err := cache.NewCache[int, any](5)
+	if err != nil {
+		log.Fatal("couldn't initialize cache, error: ", err)
+	}
+
+	// Add items to the cache
+	cache.Put(123, "value1")
+	cache.Put(456, true)
+
+	// Retrieve items from the cache
+	if value, found := cache.Get(456); found {
 		fmt.Println("Found:", value)
 	} else {
 		fmt.Println("Key not found")
 	}
 }
+
 ```
 ## Thread-Safe Functionality
 `mycacheengine` ensures thread safety by utilizing mutex locks (`sync.Mutex`) to manage concurrent access to the cache. This design prevents race conditions and ensures data integrity when multiple goroutines interact with the cache simultaneously. The mutex is locked during write operations and unlocked upon completion, allowing safe concurrent reads and writes.
