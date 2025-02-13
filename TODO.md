@@ -4,12 +4,13 @@
 
 - [X] Implement PUT operation - LRU.
 - [X] Implement PUT operation - MRU.
-- [ ] Implement GET operation.
-- [ ] Implement DELETE operation.
-- [ ] Implement LISTALL operation.
-- [ ] Implement LRU algo.
-- [ ] Implement MRU algo.
-- [ ] Create README file.
+- [X] Implement GET operation.
+- [X] Implement DELETE operation.
+- [X] Implement LISTALL operation.
+- [X] Implement LRU algo.
+- [X] Implement MRU algo.
+- [X] Create README file.
+- [X] Added LICENSE file
 
 # To keep in mind
 - The client interface should be type-safe for keys and values and allow for both the keys and value types to be specified at initialisation time. The keys will always be primitives, and the values could be primitives or other custom types.

@@ -367,6 +367,68 @@ func putTest() {
 					}
 				})
 			})
+		})
+
+		Context("Testing LRU - SHOW CASE defined in README input=[1,7,9,15,9,7,45]", func() {
+			Context("Given the same set per key-value pair", func() {
+				It("should have a single set, with 4 key-value pairs", func() {
+					itemsToLoad := []itemsToLoad{
+						{1, true},
+						{7, "hello"},
+						{9, 123},
+						{15, false},
+						{9, 456},
+						{7, "foo"},
+						{45, "bar"},
+					}
+					for _, item := range itemsToLoad {
+						mockedHashKeyToIntConverter.On("hashKeyToInt", item.key).Return(0)
+						cacheTester.Put(item.key, item.value)
+					}
+
+					// creates a list of validations
+					expectedTestValues := []struct {
+						setIndex          int
+						expectedSetLength int
+						expectedKey       int
+						expectedValue     any
+					}{
+						{
+							setIndex:          0,
+							expectedSetLength: 4,
+							expectedKey:       45,
+							expectedValue:     "bar",
+						},
+						{
+							setIndex:          0,
+							expectedSetLength: 3,
+							expectedKey:       7,
+							expectedValue:     "foo",
+						},
+						{
+							setIndex:          0,
+							expectedSetLength: 2,
+							expectedKey:       9,
+							expectedValue:     456,
+						},
+						{
+							setIndex:          0,
+							expectedSetLength: 1,
+							expectedKey:       15,
+							expectedValue:     false,
+						},
+					}
+
+					for _, expectedItem := range expectedTestValues {
+						cachedSetItems := cacheTester.sets[expectedItem.setIndex]
+						Expect(cachedSetItems.Len()).Should(Equal(expectedItem.expectedSetLength))
+
+						cachedItem := cachedSetItems.Remove(cachedSetItems.Front()).(*entry[int, any])
+						Expect(cachedItem.key).Should(Equal(expectedItem.expectedKey))
+						Expect(cachedItem.value).Should(Equal(expectedItem.expectedValue))
+					}
+				})
+			})
 
 			Context("Given the same set twice", func() {
 				It("should have 2 defined sets, with a two values per set", func() {
@@ -575,7 +637,7 @@ func putTest() {
 					// It should follow the iterations:
 					// 123, 456, 789, 100 // First 4 iterations, set is full since here
 					// 123, 456, 789, 101 // 101 is a new key, 100 is removed cause algo is MRU
-					// 123, 456, 789, 102 // 101 is a new key, 101 is removed cause algo is MRU
+					// 123, 456, 789, 102 // 102 is a new key, 101 is removed cause algo is MRU
 					// 123, 789, 102, 456 // 456 is NOT a new key, it's moved in front of the set.
 					// 123, 789, 102, 100 // 100 is a new key, 456 is removed cause algo is MRU
 
@@ -740,6 +802,68 @@ func putTest() {
 						Expect(cachedItem.key).Should(Equal(expectedItem.expectedKey))
 						Expect(cachedItem.value).Should(Equal(expectedItem.expectedValue))
 					}
+				})
+			})
+
+			Context("Testing MRU - SHOW CASE defined in README input=[1,7,9,15,9,7,45]", func() {
+				Context("Given the same set per key-value pair", func() {
+					It("should have a single set, with 4 key-value pairs", func() {
+						itemsToLoad := []itemsToLoad{
+							{1, true},
+							{7, "hello"},
+							{9, 123},
+							{15, false},
+							{9, 456},
+							{7, "foo"},
+							{45, "bar"},
+						}
+						for _, item := range itemsToLoad {
+							mockedHashKeyToIntConverter.On("hashKeyToInt", item.key).Return(0)
+							cacheTester.Put(item.key, item.value)
+						}
+
+						// creates a list of validations
+						expectedTestValues := []struct {
+							setIndex          int
+							expectedSetLength int
+							expectedKey       int
+							expectedValue     any
+						}{
+							{
+								setIndex:          0,
+								expectedSetLength: 4,
+								expectedKey:       45,
+								expectedValue:     "bar",
+							},
+							{
+								setIndex:          0,
+								expectedSetLength: 3,
+								expectedKey:       9,
+								expectedValue:     456,
+							},
+							{
+								setIndex:          0,
+								expectedSetLength: 2,
+								expectedKey:       15,
+								expectedValue:     false,
+							},
+							{
+								setIndex:          0,
+								expectedSetLength: 1,
+								expectedKey:       1,
+								expectedValue:     true,
+							},
+						}
+
+						for _, expectedItem := range expectedTestValues {
+							cachedSetItems := cacheTester.sets[expectedItem.setIndex]
+							Expect(cachedSetItems.Len()).Should(Equal(expectedItem.expectedSetLength))
+
+							cachedItem := cachedSetItems.Remove(cachedSetItems.Front()).(*entry[int, any])
+							Expect(cachedItem.key).Should(Equal(expectedItem.expectedKey))
+							Expect(cachedItem.value).Should(Equal(expectedItem.expectedValue))
+						}
+					})
 				})
 			})
 		})
