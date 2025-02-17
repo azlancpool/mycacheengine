@@ -29,8 +29,12 @@ import (
 )
 
 func main() {
-	// Initialize cache with a capacity of 5
-	cache, err := cache.NewCache[int, any](5)
+	// It allows you to define a specific strategy for refreshing cached data.
+	// To define the MRU strategy, initialize the cache as follows:
+	// 		- cache.NewCache[int, any](5, cache.MRU_ALGO)
+	// To explicitly define LRU, you can use:
+	// 		- cache.NewCache[int, any](5, cache.LRU_ALGO)
+	cache, err := cache.NewCache[int, any](5) // Initialize the cache with a capacity of 5. By default, it will use the LRU algorithm.
 	if err != nil {
 		log.Fatal("couldn't initialize cache, error: ", err)
 	}
@@ -194,7 +198,7 @@ set = [1,15,9,7] => set = [1,15,9,45]
 Contributions are welcome! Please fork the repository and submit a pull request with your enhancements or bug fixes. I’d really appreciate it if you could take a look at breaking down my code. Do you have any edge cases in mind? Let’s give it a try!
 
 ## Changelog
-See the full changelog in [CHANGELOG.md](CHANGELOG).
+See the full changelog in [CHANGELOG](CHANGELOG).
 
 ## License
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for.

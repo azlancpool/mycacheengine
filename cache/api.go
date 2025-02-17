@@ -39,7 +39,14 @@ var (
 	}
 )
 
-// NewCache returns a new instance of Cache. It saves the provided setSize in the returned instance
+// NewCache returns a new instance of Cache. It saves the provided setSize in the returned instance.
+// If replacementAlgorithm is not provided the cache configures LRU by default.
+// It allows you to define a specific strategy for refreshing cached data, as well.
+// To define the MRU strategy, initialize the cache as follows:
+//   - cache.NewCache[int, any](5, cache.MRU_ALGO)
+//
+// To explicitly define LRU, you can use:
+//   - cache.NewCache[int, any](5, cache.LRU_ALGO)
 func NewCache[K comparable, V any](setSize int, replacementAlgorithm ...ReplacementAlgo) (*Cache[K, V], error) {
 	if setSize <= 0 {
 		return nil, fmt.Errorf("setSize provided '%d', must be a positive value", setSize)
