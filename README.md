@@ -198,7 +198,7 @@ set = [1,15,9,7] => set = [1,15,9,45]
 Contributions are welcome! Please fork the repository and submit a pull request with your enhancements or bug fixes. I’d really appreciate it if you could take a look at breaking down my code. Do you have any edge cases in mind? Let’s give it a try!
 
 ## Changelog
-See the full changelog in [CHANGELOG](CHANGELOG).
+See the full changelog in [CHANGELOG](CHANGELOG.md).
 
 ## License
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for.
