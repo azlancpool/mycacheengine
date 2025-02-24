@@ -1,5 +1,6 @@
 
 # mycacheengine
+[![Go Report Card](https://goreportcard.com/badge/github.com/azlancpool/mycacheengine)](https://goreportcard.com/report/github.com/azlancpool/mycacheengine)
 [![Coverage Status](https://coveralls.io/repos/github/azlancpool/mycacheengine/badge.svg?branch=main)](https://coveralls.io/github/azlancpool/mycacheengine?branch=main)
 
 `mycacheengine` is a custom caching library implemented in Go, designed to optimize data retrieval and improve application performance by temporarily storing frequently accessed data in memory. It features thread-safe operations and employs an N-way set associative caching mechanism.
